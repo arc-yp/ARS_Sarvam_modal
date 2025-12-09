@@ -110,11 +110,11 @@ ${
         break;
       case "Gujarati":
         languageInstruction =
-          "Write the review in Gujarati language, but use only English letters (Romanized Gujarati). Do NOT use Gujarati script.'";
+          "Write the review in Gujarati language, but use only English letters (Romanized Gujarati). Do NOT use Gujarati script. Write natural conversational Gujarati.";
         break;
       case "Hindi":
         languageInstruction =
-          "Write the review in Hindi language, but use only English letters (Romanized Hindi). Do NOT use Hindi script.'";
+          "Write the review in Hindi language, but use only English letters (Romanized Hindi). Do NOT use Hindi script. Write natural conversational Hindi.";
         break;
     }
 
@@ -126,7 +126,7 @@ ${
       const targetLength = Math.min(maxLength, 200); // Cap at 200
       
       // Adjust max_tokens based on language (Gujarati/Hindi need more tokens)
-      const maxTokens = selectedLanguage === "English" ? 80 : 100;
+      const maxTokens = selectedLanguage === "English" ? 80 : 150;
 
       const systemPrompt = `You are an expert at generating authentic, natural-sounding customer reviews. You must strictly follow all formatting and content guidelines provided.`;
 
