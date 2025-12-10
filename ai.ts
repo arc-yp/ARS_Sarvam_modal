@@ -7,8 +7,6 @@ export interface ReviewRequest {
   starRating: number;
   language?: string;
   sarvamApiKey?: string;
-  // Admin permission: allow bold highlighting of selected services in text/UI
-  allowServiceHighlight?: boolean;
 }
 
 export interface GeneratedReview {
@@ -92,13 +90,6 @@ Customer specifically wants to highlight these services: ${selectedServices.join
 - Don't list them generically, weave them into the experience narrative
 - Focus on how these specific aspects contributed to the ${starRating}-star experience
 - Use authentic language that reflects real customer experience with these services
-${
-  request.allowServiceHighlight === false
-    ? "- Do NOT use markdown or special symbols like ** around service names. Keep plain text."
-    : `- IMPORTANT: When mentioning any of these services (${selectedServices.join(
-        ", "
-      )}), wrap them with **double asterisks** like **service name** to make them bold in the final display`
-}
 `;
     }
 

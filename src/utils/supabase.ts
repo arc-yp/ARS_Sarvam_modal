@@ -90,8 +90,6 @@ export interface Database {
           active?: boolean | null;
           expires_at?: string | null;
           allowed_languages?: string[] | null; // NEW
-          allow_spelling_mistakes?: boolean | null; // NEW
-          highlight_services?: boolean | null; // keep explicit
         };
         Insert: {
           id?: string;
@@ -108,8 +106,6 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
           allowed_languages?: string[] | null; // NEW
-          allow_spelling_mistakes?: boolean | null; // NEW
-          highlight_services?: boolean | null; // explicit
         };
         Update: {
           id?: string;
@@ -126,8 +122,6 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
           allowed_languages?: string[] | null; // NEW
-          allow_spelling_mistakes?: boolean | null; // NEW
-          highlight_services?: boolean | null; // explicit
         };
       };
     };

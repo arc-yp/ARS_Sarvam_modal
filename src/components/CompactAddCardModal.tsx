@@ -1,11 +1,5 @@
 import React, { useState } from "react";
-import {
-  X,
-  Upload,
-  Building2,
-  AlertCircle,
-  Key,
-} from "lucide-react";
+import { X, Upload, Building2, AlertCircle, Key } from "lucide-react";
 import { ReviewCard } from "../types";
 import {
   generateId,
@@ -35,10 +29,8 @@ export const CompactAddCardModal: React.FC<CompactAddCardModalProps> = ({
     services: [] as string[],
     logoUrl: "",
     googleMapsUrl: "",
-    sarvamApiKey: "sk_lvy8wqoz_CTuFEr2mv41GcfaBhRPC0xSu",
+    sarvamApiKey: "",
     allowedLanguages: ["English", "Gujarati", "Hindi"] as string[], // NEW
-    highlightServices: false, // Default OFF: admin must enable explicitly
-    allowSpellingMistakes: false, // Default OFF per requirement
   });
   // Expiry duration state: number + unit
   const [expiryAmount, setExpiryAmount] = useState<number>(0); // 0 means no expiry
@@ -153,8 +145,6 @@ export const CompactAddCardModal: React.FC<CompactAddCardModalProps> = ({
         active: true,
         expiresAt,
         allowedLanguages: formData.allowedLanguages, // NEW
-        highlightServices: formData.highlightServices,
-        allowSpellingMistakes: formData.allowSpellingMistakes,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -552,55 +542,7 @@ export const CompactAddCardModal: React.FC<CompactAddCardModalProps> = ({
                 )}
               </div>
 
-              {/* Service Highlight Permission (Admin) */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Service Highlight Permission
-                </label>
-                <label className="inline-flex items-center gap-2 text-sm text-gray-700">
-                  <input
-                    type="checkbox"
-                    checked={formData.highlightServices}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        highlightServices: e.target.checked,
-                      }))
-                    }
-                  />
-                  Show selected services in bold blue text in reviews
-                </label>
-                <p className="text-xs text-gray-500 mt-1">
-                  Uncheck to keep service names plain (no emphasis or markdown
-                  markers).
-                </p>
-              </div>
-
-              {/* Spelling Mistake Highlight (Admin) */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Spelling Mistake Highlight
-                </label>
-                <label className="inline-flex items-center gap-2 text-sm text-gray-700">
-                  <input
-                    type="checkbox"
-                    checked={formData.allowSpellingMistakes}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        allowSpellingMistakes: e.target.checked,
-                      }))
-                    }
-                  />
-                  Show subtle red underlined spelling mistakes in reviews
-                </label>
-                <p className="text-xs text-gray-500 mt-1">
-                  Default OFF. When enabled, generated reviews include a few
-                  human-like spelling mistakes highlighted in red.
-                </p>
-              </div>
-
-              {/* Actions */}
+              {/* Action Buttons */}
               <div className="flex gap-3 pt-4 border-t border-gray-200">
                 <button
                   type="button"

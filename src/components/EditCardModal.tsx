@@ -1,12 +1,5 @@
 import React, { useState } from "react";
-import {
-  X,
-  Upload,
-  Building2,
-  Link,
-  AlertCircle,
-  Key,
-} from "lucide-react";
+import { X, Upload, Building2, Link, AlertCircle, Key } from "lucide-react";
 import { ReviewCard } from "../types";
 import { generateSlug, validateGoogleMapsUrl } from "../utils/helpers";
 import { SegmentedButtonGroup } from "./SegmentedButtonGroup";
@@ -32,10 +25,8 @@ export const EditCardModal: React.FC<EditCardModalProps> = ({
     services: card.services || [],
     logoUrl: card.logoUrl,
     googleMapsUrl: card.googleMapsUrl,
-    sarvamApiKey: card.sarvamApiKey || "sk_lvy8wqoz_CTuFEr2mv41GcfaBhRPC0xSu",
+    sarvamApiKey: card.sarvamApiKey || "",
     allowedLanguages: card.allowedLanguages || ["English", "Gujarati", "Hindi"], // NEW
-    highlightServices: card.highlightServices !== false, // Admin toggle - default true
-    allowSpellingMistakes: card.allowSpellingMistakes === true ? true : false, // default OFF
   });
   // Existing expiry and new duration inputs
   const existingExpiry = card.expiresAt ? new Date(card.expiresAt) : null;
@@ -126,8 +117,6 @@ export const EditCardModal: React.FC<EditCardModalProps> = ({
         sarvamApiKey: formData.sarvamApiKey.trim(),
         updatedAt: new Date().toISOString(),
         allowedLanguages: formData.allowedLanguages, // NEW
-        highlightServices: formData.highlightServices,
-        allowSpellingMistakes: formData.allowSpellingMistakes,
       };
 
       // Determine new expiresAt
@@ -526,53 +515,6 @@ export const EditCardModal: React.FC<EditCardModalProps> = ({
                 </p>
               </div>
 
-              {/* Service Highlight Permission (Admin) */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Service Highlight Permission
-                </label>
-                <label className="inline-flex items-center gap-2 text-sm text-gray-700">
-                  <input
-                    type="checkbox"
-                    checked={formData.highlightServices}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        highlightServices: e.target.checked,
-                      }))
-                    }
-                  />
-                  Show selected services in bold blue text in reviews
-                </label>
-                <p className="text-xs text-gray-500 mt-1">
-                  When unchecked, services will not be emphasized and the AI
-                  won't add markdown markers.
-                </p>
-              </div>
-
-              {/* Spelling Mistake Highlight (Admin) */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Spelling Mistake Highlight
-                </label>
-                <label className="inline-flex items-center gap-2 text-sm text-gray-700">
-                  <input
-                    type="checkbox"
-                    checked={formData.allowSpellingMistakes}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        allowSpellingMistakes: e.target.checked,
-                      }))
-                    }
-                  />
-                  Show subtle red underlined spelling mistakes in reviews
-                </label>
-                <p className="text-xs text-gray-500 mt-1">
-                  Default OFF. Enable to make reviews feel more human.
-                </p>
-              </div>
-
               {/* Actions */}
               <div className="flex gap-3 pt-4 border-t border-gray-200">
                 <button
@@ -592,7 +534,6 @@ export const EditCardModal: React.FC<EditCardModalProps> = ({
               </div>
             </form>
           </div>
-            
         </div>
       </div>
     </div>

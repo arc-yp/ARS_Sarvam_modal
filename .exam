@@ -1,0 +1,21 @@
+# Supabase Configuration
+VITE_SUPABASE_URL=https://vlfowlvbesvpotxuunew.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZsZm93bHZiZXN2cG90eHV1bmV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM4ODQzNjEsImV4cCI6MjA2OTQ2MDM2MX0.6Ao4sdPTTkzBkETRRrtjhKcp2N3hzNj4bDRUprflfj0
+
+VITE_SARVAM_API_KEY=
+
+# Admin Authentication
+VITE_ADMIN_MOBILE=6355806287
+VITE_ADMIN_PASSWORD=pal@123
+
+# Application Configuration
+VITE_APP_NAME=Review Automation System
+VITE_APP_VERSION=1.0.0
+
+VITE_SHEETS_WEBAPP_URL="https://script.google.com/macros/s/AKfycbxEiZO7KIS-OZf14gEDuLcEE2Q067b0ncbO-8Dl1zqXpDkHXmafxAw9BtOMTtbzziP1/exec"
+VITE_SHEETS_SHARED_SECRET="optional_shared_secret"
+
+# ----------------------------------------------
+# Review Store API YASH UPSC
+VITE_REVIEWSTORE_URL=https://scscdnaetcumkyronqvu.supabase.co
+VITE_REVIEWSTORE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNjc2NkbmFldGN1bWt5cm9ucXZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0NzgzMjAsImV4cCI6MjA4MDA1NDMyMH0.oY1-qPApOsOHDn5QQzgj-K1oQ5-wV7-f6qBzDPbxTj8

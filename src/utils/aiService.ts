@@ -7,8 +7,6 @@ export interface ReviewRequest {
   starRating: number;
   language?: string;
   sarvamApiKey?: string;
-  // Admin permission: allow bold highlighting of selected services in text/UI
-  allowServiceHighlight?: boolean;
 }
 
 export interface GeneratedReview {
@@ -49,10 +47,7 @@ export class AIReviewService {
     usedReviewHashes.add(hash);
   }
 
-  async generateReview(
-    request: ReviewRequest,
-    maxRetries: number = 5
-  ): Promise<GeneratedReview> {
+  async generateReview(request: ReviewRequest): Promise<GeneratedReview> {
     const { sarvamApiKey } = request;
 
     if (!sarvamApiKey) {
@@ -92,13 +87,6 @@ Customer specifically wants to highlight these services: ${selectedServices.join
 - Don't list them generically, weave them into the experience narrative
 - Focus on how these specific aspects contributed to the ${starRating}-star experience
 - Use authentic language that reflects real customer experience with these services
-${
-  request.allowServiceHighlight === false
-    ? "- Do NOT use markdown or special symbols like ** around service names. Keep plain text."
-    : `- IMPORTANT: When mentioning any of these services (${selectedServices.join(
-        ", "
-      )}), wrap them with **double asterisks** like **service name** to make them bold in the final display`
-}
 `;
     }
 
@@ -110,127 +98,188 @@ ${
         break;
       case "Gujarati":
         languageInstruction =
-          "Write the review in Gujarati language, but use only English letters (Romanized Gujarati). Do NOT use Gujarati script. Write natural conversational Gujarati.";
+          "Write review in Gujarati using Roman letters (Romanized Gujarati). Do NOT use Gujarati script.'";
         break;
       case "Hindi":
         languageInstruction =
-          "Write the review in Hindi language, but use only English letters (Romanized Hindi). Do NOT use Hindi script. Write natural conversational Hindi.";
+          "Write review in Hindi using Roman letters (Romanized Hindi). Do NOT use Devanagari script.;
         break;
     }
 
     // Generate review using Sarvam AI
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-      // Random target length between 50-200 characters
-      const minLength = 50 + Math.floor(Math.random() * 50); // 50-100
-      const maxLength = minLength + 50 + Math.floor(Math.random() * 50); // +50 to +100 more
-      const targetLength = Math.min(maxLength, 200); // Cap at 200
-      
-      // Adjust max_tokens based on language (Gujarati/Hindi need more tokens)
-      const maxTokens = selectedLanguage === "English" ? 80 : 150;
+    const systemPrompt = `You are an expert at generating authentic, natural-sounding customer reviews. You must strictly follow all formatting and content guidelines provided.`;
 
-      const systemPrompt = `You are an expert at generating authentic, natural-sounding customer reviews. You must strictly follow all formatting and content guidelines provided.`;
+    const userPrompt = `Generate a realistic Google review for "${businessName}" which is a ${type} in the ${category} category.
 
-      const userPrompt = `Write a complete ${starRating}-star Google review for "${businessName}" (${type}).
-
-IMPORTANT: Write 2-3 COMPLETE sentences. Each sentence must end properly. Maximum ${targetLength} characters.
-
-Tone: ${sentimentGuide[starRating as keyof typeof sentimentGuide]}
-
+Star Rating: ${starRating}/5
+Sentiment: ${sentimentGuide[starRating as keyof typeof sentimentGuide]}
+${highlights ? `Customer highlights: ${highlights}` : ""}
 ${serviceInstructions}
 
-Rules:
-- ${languageInstruction}
-- Write COMPLETE sentences only, no cut-off words
-- Each sentence must have proper ending
-- Keep it natural and conversational
-- Unique starting line each time
-- Do NOT use these symbols: ! - — – … • " " ' ' 
-- Use only periods (.) and commas (,)
+Strict instructions:
+- No repetition of ideas or sentence structures.
+- First sentence must always be different.
+- Use fresh adjectives and sentence tone.
+- Tone: Human, real, warm, and natural.
+- not use exclamation mark
+
+Requirements:
+- CRITICAL LENGTH LIMIT: Write EXACTLY 200-250 characters. Count every character carefully.
+- Write 2-3 SHORT sentences maximum
+- Keep sentences brief and direct
+- ${businessName} must appear once in the review
+- Match the ${starRating}-star sentiment exactly
+- Sound natural and human-like
+- DO NOT repeat phrasing from previous reviews
+- Not write any place name in the review
+- Avoid overused lines like "I felt safe", "highly recommend", "Dr. is amazing"
+- Be specific to the business type (${type})
+- Use realistic customer language
+- Don't mention the star rating in the text
+- Make it unique and concise
+- STOP WRITING after 250 characters
 ${
-  selectedServices && selectedServices.length > 0
-    ? `- Naturally mention: ${selectedServices.join(", ")}`
+  highlights
+    ? `- Try to incorporate these highlights naturally: ${highlights}`
     : ""
 }
+${
+  selectedServices && selectedServices.length > 0
+    ? `- Naturally incorporate these service experiences: ${selectedServices.join(
+        ", "
+      )}`
+    : ""
+}
+- ${languageInstruction}
+- Use authentic regional expressions and terminology
+- Avoid generic templates or repetitive structures
+- Return only the review text, no quotes, no instructions, no extra formatting, and no introductory sentences.`;
 
-Write the review now. Ensure every sentence is complete. Stop at ${targetLength} characters.`;
+    try {
+      const response = await fetch(this.SARVAM_API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-subscription-key": sarvamApiKey,
+        },
+        body: JSON.stringify({
+          model: this.SARVAM_MODEL,
+          messages: [
+            {
+              role: "system",
+              content: systemPrompt,
+            },
+            {
+              role: "user",
+              content: userPrompt,
+            },
+          ],
+          temperature: 0.7,
+          max_tokens: 120,
+        }),
+      });
 
-      try {
-        const response = await fetch(this.SARVAM_API_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "api-subscription-key": sarvamApiKey,
-          },
-          body: JSON.stringify({
-            model: this.SARVAM_MODEL,
-            messages: [
-              {
-                role: "system",
-                content: systemPrompt,
-              },
-              {
-                role: "user",
-                content: userPrompt,
-              },
-            ],
-            temperature: 0.9,
-            max_tokens: maxTokens,
-          }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          console.error(
-            `Sarvam API Error (attempt ${attempt + 1}):`,
-            errorData
-          );
-          continue;
-        }
-
-        const data = await response.json();
-        const reviewText = data.choices?.[0]?.message?.content?.trim() || "";
-
-        // Check if review is unique
-        if (reviewText && this.isReviewUnique(reviewText)) {
-          // Log token usage for successful unique review
-          if (data.usage) {
-            console.log(`📊 Token Usage (Attempt ${attempt + 1}):`);
-            console.log(`   ⭐ Star Rating: ${starRating}/5`);
-            console.log(`   🌐 Language: ${selectedLanguage}`);
-            console.log(`   ---`);
-            console.log(`   📤 Prompt Tokens: ${data.usage.prompt_tokens}`);
-            console.log(
-              `   📥 Response Tokens: ${data.usage.completion_tokens}`
-            );
-            console.log(`   📊 Total Tokens: ${data.usage.total_tokens}`);
-            console.log(
-              `   📏 Generated Review Length: ${reviewText.length} characters`
-            );
-            console.log(`   ---`);
-            console.log(
-              `   📄 Review Preview: "${reviewText.substring(0, 80)}..."`
-            );
-          }
-
-          this.markReviewAsUsed(reviewText);
-          return {
-            text: reviewText,
-            hash: this.generateHash(reviewText),
-            language: selectedLanguage,
-            rating: starRating,
-            selectedServices: selectedServices,
-          };
-        }
-
-        console.log(
-          `Attempt ${attempt + 1}: Generated duplicate review, retrying...`
-        );
-      } catch (error) {
-        console.error(`Sarvam AI Error (attempt ${attempt + 1}):`, error);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Sarvam API Error:", errorData);
+        throw new Error(`API request failed: ${response.status}`);
       }
-    }
 
-    throw new Error("Failed to generate unique review after all retries");
+      const data = await response.json();
+      let reviewText = data.choices?.[0]?.message?.content?.trim() || "";
+
+      if (!reviewText) {
+        throw new Error("No review text generated");
+      }
+
+      // Enforce maximum length - truncate at sentence boundary if needed
+      if (reviewText.length > 280) {
+        const sentences = reviewText.match(/[^.!?]+[.!?]+/g) || [];
+        reviewText = "";
+        for (const sentence of sentences) {
+          if ((reviewText + sentence).length <= 280) {
+            reviewText += sentence;
+          } else {
+            break;
+          }
+        }
+        reviewText = reviewText.trim();
+      }
+
+      // Log token usage with detailed breakdown
+      if (data.usage) {
+        console.log(`\n📊 Token Usage Breakdown:`);
+        console.log(`   ⭐ Star Rating: ${starRating}/5`);
+        console.log(`   🌐 Language: ${selectedLanguage}`);
+        console.log(`   ---`);
+
+        // Show prompt component sizes
+        console.log(`   📝 Prompt Components:`);
+        console.log(
+          `      • System Prompt: ~${Math.ceil(
+            systemPrompt.length / 4
+          )} tokens (${systemPrompt.length} chars)`
+        );
+        console.log(
+          `      • User Prompt: ~${Math.ceil(userPrompt.length / 4)} tokens (${
+            userPrompt.length
+          } chars)`
+        );
+        console.log(
+          `      • Business Name: (${businessName.length} chars)`
+        );
+        console.log(
+          `      • Category: (${category.length} chars)`
+        );
+        console.log(`      • Type: (${type.length} chars)`);
+        if (highlights) {
+          console.log(
+            `      • Highlights: (${highlights.length} chars)`
+          );
+        }
+        if (selectedServices && selectedServices.length > 0) {
+          console.log(
+            `      • Services: ${selectedServices.join(", ")} (${
+              selectedServices.join(", ").length
+            } chars)`
+          );
+        }
+        console.log(`   ---`);
+
+        // Show actual API token usage
+        console.log(`   📤 Prompt Tokens: ${data.usage.prompt_tokens}`);
+        console.log(`   📥 Response Tokens: ${data.usage.completion_tokens}`);
+        console.log(`   📊 Total Tokens: ${data.usage.total_tokens}`);
+        console.log(
+          `   💰 Estimated Cost: ~$${(
+            (data.usage.total_tokens / 1000) *
+            0.002
+          ).toFixed(6)}`
+        );
+        console.log(`   ---`);
+
+        // Show generated review info
+        console.log(
+          `   📏 Generated Review Length: ${reviewText.length} characters`
+        );
+        console.log(
+          `   📄 Review Preview: "${reviewText.substring(0, 80)}..."`
+        );
+        console.log(`   ---\n`);
+      }
+
+      this.markReviewAsUsed(reviewText);
+      return {
+        text: reviewText,
+        hash: this.generateHash(reviewText),
+        language: selectedLanguage,
+        rating: starRating,
+        selectedServices: selectedServices,
+      };
+    } catch (error) {
+      console.error("Sarvam AI Error:", error);
+      throw error;
+    }
   }
 
   // Clear used hashes (for testing or reset)

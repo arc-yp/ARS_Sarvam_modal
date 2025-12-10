@@ -13,12 +13,7 @@ import { ServiceSelector } from "./ServiceSelector";
 import { aiService } from "../utils/aiService";
 import { storage } from "../utils/storage";
 import { reviewStore } from "./ReviewStore/reviewStore"; // for review storage DB
-import {
-  addSpellingMistakes,
-  parseReviewWithMistakes,
-  type Mistake,
-  type TextSegment,
-} from "../utils/mistakeGenerator";
+import { config } from "../utils/config";
 
 // Prevent double increments in React 18 Strict Mode
 // Track view increments per card id for this page load to avoid double increments in Strict Mode
@@ -33,12 +28,12 @@ export const CompactReviewCardView: React.FC<CompactReviewCardViewProps> = ({
 }) => {
   // All hooks must be called before any early returns
   const [currentReview, setCurrentReview] = useState("");
-  const [mistakes, setMistakes] = useState<Mistake[]>([]);
   const [selectedRating, setSelectedRating] = useState(5);
   const [selectedLanguage, setSelectedLanguage] = useState("English");
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [viewCount, setViewCount] = useState(card.viewCount || 0);
   const hasGeneratedInitialReview = useRef(false);
@@ -59,6 +54,7 @@ export const CompactReviewCardView: React.FC<CompactReviewCardViewProps> = ({
     services?: string[]
   ) => {
     setIsGenerating(true);
+    setErrorMessage(null);
     try {
       // If no services selected but services are available, randomly select one
       let servicesToUse = services || selectedServices;
@@ -79,14 +75,10 @@ export const CompactReviewCardView: React.FC<CompactReviewCardViewProps> = ({
         selectedServices: servicesToUse,
         starRating: rating,
         language: language || selectedLanguage,
-        sarvamApiKey: card.sarvamApiKey,
-        allowServiceHighlight: card.highlightServices === true,
+        sarvamApiKey: card.sarvamApiKey || config.ai.sarvamApiKey,
       });
 
-      // Always inject a few random spelling mistakes (1-3). Highlight depends on toggle.
-      const reviewWithMistakes = addSpellingMistakes(review.text);
-      setCurrentReview(reviewWithMistakes.text);
-      setMistakes(reviewWithMistakes.mistakes);
+      setCurrentReview(review.text);
       // Store in separate new DB (after successful generation)
       try {
         await reviewStore.saveReview({
@@ -95,7 +87,7 @@ export const CompactReviewCardView: React.FC<CompactReviewCardViewProps> = ({
           rating,
           language: language || selectedLanguage,
           services: servicesToUse,
-          reviewText: reviewWithMistakes.text.replace(/\*\*/g, ""), // clean text
+          reviewText: review.text.replace(/\*\*/g, ""), // clean text
           isFallback: false,
           generationSource,
         });
@@ -104,6 +96,25 @@ export const CompactReviewCardView: React.FC<CompactReviewCardViewProps> = ({
       }
     } catch (error) {
       console.error("Failed to generate review:", error);
+
+      // Determine error type and set appropriate message
+      const errorStr = error instanceof Error ? error.message : String(error);
+      if (errorStr.includes("API key") || errorStr.includes("required")) {
+        setErrorMessage("⚠️ Please contact admin. try again after some time.");
+      } else if (
+        errorStr.includes("429") ||
+        errorStr.includes("limit") ||
+        errorStr.includes("quota")
+      ) {
+        setErrorMessage("⏳Please try again after some time.");
+      } else if (errorStr.includes("network") || errorStr.includes("fetch")) {
+        setErrorMessage(
+          "🌐 Network error. Please check your connection and try again."
+        );
+      } else {
+        setErrorMessage("❌ Please try again later.");
+      }
+
       // Use contextual fallback review
       const includedServices = (services || selectedServices || [])
         .slice(0, 3)
@@ -112,7 +123,6 @@ export const CompactReviewCardView: React.FC<CompactReviewCardViewProps> = ({
         includedServices ? " for " + includedServices : ""
       }.`;
       setCurrentReview(fallback);
-      setMistakes([]);
 
       // fallback also save
       try {
@@ -160,9 +170,8 @@ export const CompactReviewCardView: React.FC<CompactReviewCardViewProps> = ({
       const plainText = currentReview.replace(/\*\*/g, "");
 
       console.log("📋 Copying to clipboard:");
-      console.log("Review with mistakes:", currentReview);
+      console.log("Review text:", currentReview);
       console.log("Copied text:", plainText);
-      console.log("Number of mistakes:", mistakes.length);
 
       await navigator.clipboard.writeText(plainText);
       setCopied(true);
@@ -185,53 +194,9 @@ export const CompactReviewCardView: React.FC<CompactReviewCardViewProps> = ({
   };
 
   const renderReviewText = () => {
-    // Parse full review including mistakes. Styling applied conditionally.
-    const segments = parseReviewWithMistakes(currentReview, mistakes);
-
     return (
       <blockquote className="text-gray-800 text-sm leading-relaxed whitespace-pre-line">
-        {segments.map((segment: TextSegment, segmentIndex: number) => {
-          // Handle mistake segments: highlight only if admin toggle ON
-          if (segment.isMistake) {
-            if (card.allowSpellingMistakes === true) {
-              return (
-                <span
-                  key={segmentIndex}
-                  className="text-red-600 font-medium underline decoration-red-600 decoration-wavy cursor-help"
-                  title={`Correct spelling: "${segment.original}"`}
-                >
-                  {segment.text}
-                </span>
-              );
-            }
-            // Toggle OFF: show incorrect word plainly (still human-like)
-            return <span key={segmentIndex}>{segment.text}</span>;
-          }
-
-          // Handle normal text with possible service highlighting
-          if (card.highlightServices === false) {
-            return <span key={segmentIndex}>{segment.text}</span>;
-          }
-
-          // Parse for **bold** service highlights
-          const parts = segment.text.split(/(\*\*[^*]+\*\*)/g);
-
-          return (
-            <span key={segmentIndex}>
-              {parts.map((part, partIndex) => {
-                if (part.startsWith("**") && part.endsWith("**")) {
-                  const boldText = part.slice(2, -2);
-                  return (
-                    <strong key={partIndex} className="font-bold text-blue-700">
-                      {boldText}
-                    </strong>
-                  );
-                }
-                return <span key={partIndex}>{part}</span>;
-              })}
-            </span>
-          );
-        })}
+        {currentReview}
       </blockquote>
     );
   };
@@ -430,6 +395,14 @@ export const CompactReviewCardView: React.FC<CompactReviewCardViewProps> = ({
                       {selectedServices.length > 0
                         ? `${selectedServices.length} services included`
                         : "Personalizing text"}
+                    </p>
+                  </div>
+                </div>
+              ) : errorMessage ? (
+                <div className="flex items-center justify-center w-full">
+                  <div className="text-center space-y-2">
+                    <p className="text-orange-600 text-sm font-medium">
+                      {errorMessage}
                     </p>
                   </div>
                 </div>

@@ -16,10 +16,6 @@ export interface ReviewCard {
   createdAt: string;
   updatedAt: string;
   allowedLanguages?: string[]; // NEW
-  // Admin control: whether selected services should appear bold/blue in UI
-  highlightServices?: boolean; // default true when undefined
-  // Admin control: whether to inject and show red spelling mistakes in reviews
-  allowSpellingMistakes?: boolean; // default false when undefined
 }
 
 export interface ReviewTemplates {
