@@ -102,7 +102,7 @@ Customer specifically wants to highlight these services: ${selectedServices.join
         break;
       case "Hindi":
         languageInstruction =
-          "Write review in Hindi using Roman letters (Romanized Hindi). Do NOT use Devanagari script.;
+          "Write review in Hindi using Roman letters (Romanized Hindi). Do NOT use Devanagari script.";
         break;
     }
 
@@ -121,6 +121,7 @@ Strict instructions:
 - First sentence must always be different.
 - Use fresh adjectives and sentence tone.
 - Tone: Human, real, warm, and natural.
+- in gujarati starting line not write "Kem chho!"
 - not use exclamation mark
 
 Requirements:
